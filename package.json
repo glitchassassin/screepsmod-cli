@@ -1,0 +1,17 @@
+{
+  "name": "screepsmod-cli",
+  "version": "1.0.0",
+  "description": "Allows CLI commands to be executed via HTTP calls",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 0"
+  },
+  "screeps_mod": true,
+  "keywords": [
+    "screeps",
+    "mod"
+  ],
+  "author": "Jon Winsley",
+  "license": "MIT",
+  "dependencies": {}
+}
