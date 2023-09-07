@@ -16,7 +16,7 @@ const YAML = require('yaml')
  * }}
  */
 function loadConfig() {
-    for (const filename of ['/screeps/config.yml', '/screeps/config.yaml']) {
+    for (const filename of ['config.yml', 'config.yaml']) {
         try {
             cli = YAML.parse(fs.readFileSync(filename, 'utf8')).cli || {};
             console.log('Loaded CLI config from ' + filename);
