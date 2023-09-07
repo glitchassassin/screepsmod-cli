@@ -3,6 +3,8 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const vm = require('vm')
 const util = require('util')
+const fs = require('fs')
+const YAML = require('yaml')
 
 /**
  * Loads config from config.yml (or .yaml)
@@ -14,13 +16,14 @@ const util = require('util')
  * }}
  */
 function loadConfig() {
-    for (const filename of ['screeps.yml', 'screeps.yaml']) {
+    for (const filename of ['/screeps/config.yml', '/screeps/config.yaml']) {
         try {
             cli = YAML.parse(fs.readFileSync(filename, 'utf8')).cli;
             if (cli) console.log('Loaded CLI config from ' + filename);
             return cli;
         } catch (e) {
             // skip this file
+            console.log(filename, e)
         }
     }
     return {};
