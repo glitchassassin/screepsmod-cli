@@ -18,7 +18,7 @@ docker compose run curl -X POST http://localhost:21028/cli -d 'help()'
 
 ## Usage
 
-If you want to be able to access the CLI endpoint from outside the container, set the host to `0.0.0.0` in your config:
+If you want to be able to access the CLI endpoint from outside the container, set the host to `0.0.0.0` in your config (and make sure the port is exposed in your docker-compose):
 
 ```yml
 cli:
