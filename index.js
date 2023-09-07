@@ -4,13 +4,34 @@ const bodyParser = require('body-parser')
 const vm = require('vm')
 const util = require('util')
 
+/**
+ * Loads config from config.yml (or .yaml)
+ * @returns {{
+ *   host?: string,
+ *   port?: number,
+ *   username?: string,
+ *   password?: string,
+ * }}
+ */
+function loadConfig() {
+    for (const filename of ['screeps.yml', 'screeps.yaml']) {
+        try {
+            cli = YAML.parse(fs.readFileSync(filename, 'utf8')).cli;
+            if (cli) console.log('Loaded CLI config from ' + filename);
+            return cli;
+        } catch (e) {
+            // skip this file
+        }
+    }
+}
+
 module.exports = config => {
 	if (config.cli) {
+        const cliServerConfig = loadConfig();
 		const app = express()
 		const server = http.createServer(app)
-		config.cli.connectionListener = socket => {
-			server.emit('connection', socket)
-		}
+
+        // Endpoints
 		app.get('/greeting', (req, res) => {
 			let build = ' '
 			try {
@@ -40,5 +61,25 @@ module.exports = config => {
 				cb('Error: '+(err.stack || err), true)
 			}
 		})
+
+        // Basic auth, if configured
+        app.use((req, res, next) => {
+            if (!cliServerConfig.username || !cliServerConfig.password) {
+                return next()
+            }
+            
+            const b64auth = (req.headers.authorization || '').split(' ')[1] || ''
+            const [username, password] = Buffer.from(b64auth, 'base64').toString().split(':')
+
+            if (cliServerConfig.username === username && cliServerConfig.password === password) {
+                return next()
+            }
+
+            res.set('WWW-Authenticate', 'Basic realm="cli"')
+            res.status(401).send('Authentication required.')
+        })
+
+        // Start the server
+		server.listen(cliServerConfig.port || 21028, cliServerConfig.host || 'localhost');
 	}
 }
