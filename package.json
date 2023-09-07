@@ -2,6 +2,7 @@
   "name": "screepsmod-cli",
   "version": "1.0.0",
   "description": "Allows CLI commands to be executed via HTTP calls",
+  "repository": "https://github.com/glitchassassin/screepsmod-cli/",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 0"
