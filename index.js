@@ -23,9 +23,17 @@ function loadConfig() {
             // skip this file
         }
     }
+    return {};
 }
 
 module.exports = config => {
+    const package = require("./package.json");
+    config.backend.features = config.backend.features || [];
+    config.backend.features.push({
+      name: package.name,
+      version: package.version,
+    });
+
 	if (config.cli) {
         const cliServerConfig = loadConfig();
 		const app = express()
@@ -81,5 +89,7 @@ module.exports = config => {
 
         // Start the server
 		server.listen(cliServerConfig.port || 21028, cliServerConfig.host || 'localhost');
+
+        console.log('Started REST CLI server on ' + (cliServerConfig.host || 'localhost') + ':' + (cliServerConfig.port || 21028));
 	}
 }

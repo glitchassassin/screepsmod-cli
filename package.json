@@ -13,5 +13,8 @@
   ],
   "author": "Jon Winsley",
   "license": "MIT",
-  "dependencies": {}
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "express": "^4.18.2"
+  }
 }

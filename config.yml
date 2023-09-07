@@ -1,0 +1,6 @@
+mods:
+  - screepsmod-auth
+  - /screeps/screepsmod-cli
+cli:
+  host: localhost
+  port: 21028
