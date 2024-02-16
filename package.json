@@ -1,6 +1,6 @@
 {
   "name": "screepsmod-cli",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Allows CLI commands to be executed via HTTP calls",
   "repository": "https://github.com/glitchassassin/screepsmod-cli/",
   "main": "index.js",
