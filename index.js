@@ -8,12 +8,7 @@ const YAML = require('yaml')
 
 /**
  * Loads config from config.yml (or .yaml)
- * @returns {{
- *   host?: string,
- *   port?: number,
- *   username?: string,
- *   password?: string,
- * }}
+ * @returns {Config}
  */
 function loadConfig() {
     for (const filename of ['config.yml', 'config.yaml']) {
@@ -29,6 +24,9 @@ function loadConfig() {
     return {};
 }
 
+/**
+ * @param {import('typed-screeps-server').ServerConfig} config
+ */
 module.exports = config => {
     const package = require("./package.json");
     config.backend.features = config.backend.features || [];
@@ -41,18 +39,24 @@ module.exports = config => {
         const cliServerConfig = loadConfig();
 		const app = express()
 		const server = http.createServer(app)
+        const cli = config.cli
 
         // Endpoints
 		app.get('/greeting', (req, res) => {
 			let build = ' '
 			try {
+                // @ts-expect-error not in our typed modules list
 				build = 'v'+require('screeps').version
 			}catch(err){}
-			let text = config.cli.greeting.replace('{build}', build)
+			let text = cli.greeting.replace('{build}', build)
 			res.write(text)
 			res.end()
 		})
 		app.post('/cli', bodyParser.text({ type: req => true }), async (req, res) => {
+            /**
+             * @param {string} data
+             * @param {boolean} [isResult]
+             */
 			const cb = (data, isResult) => {
 				res.write(data + "\n")
 				if (isResult) {
@@ -60,7 +64,7 @@ module.exports = config => {
 				}
 			}
 			const command = req.body
-			const ctx = vm.createContext(config.cli.createSandbox(cb))
+			const ctx = vm.createContext(cli.createSandbox(cb))
 			try {
 				const result = await vm.runInContext(command, ctx)
 				if (typeof result != 'string') {
@@ -68,8 +72,8 @@ module.exports = config => {
 				} else {
 					cb(''+result, true)
 				}
-			} catch(err) {
-				cb('Error: '+(err.stack || err), true)
+			} catch (err) {
+                cb('Error: ' + (err instanceof Error ? err.stack : err), true)
 			}
 		})
 

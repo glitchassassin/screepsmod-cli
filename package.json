@@ -5,7 +5,7 @@
   "repository": "https://github.com/glitchassassin/screepsmod-cli/",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 0"
+    "test": "tsc -p tsconfig.json"
   },
   "screeps_mod": true,
   "keywords": [
@@ -18,5 +18,9 @@
     "body-parser": "^1.20.2",
     "express": "^4.18.2",
     "yaml": "^1.10.2"
+  },
+  "devDependencies": {
+    "typed-screeps-server": "^0.0.5",
+    "typescript": "^7.0.2"
   }
 }
