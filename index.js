@@ -6,22 +6,33 @@ const util = require('util')
 const fs = require('fs')
 const YAML = require('yaml')
 
+/** @type {Config} */
+const DEFAULTS = {
+    host: "localhost",
+    port: 21028,
+};
+
 /**
  * Loads config from config.yml (or .yaml)
  * @returns {Config}
  */
 function loadConfig() {
+    /** @type {Config | undefined} */
+    let config;
     for (const filename of ['config.yml', 'config.yaml']) {
         try {
-            const cli = YAML.parse(fs.readFileSync(filename, 'utf8')).cli || {};
+            config = YAML.parse(fs.readFileSync(filename, 'utf8')).cli || {};
             console.log('Loaded CLI config from ' + filename);
-            return cli;
+            break;
         } catch (e) {
             // skip this file
             console.log(filename, e)
         }
     }
-    return {};
+    if (!config) {
+        return DEFAULTS;
+    }
+    return Object.assign({}, DEFAULTS, config);
 }
 
 /**
@@ -39,7 +50,7 @@ module.exports = config => {
     }
 
 	if (config.cli) {
-        const cliServerConfig = loadConfig();
+        const { host, port, username, password } = loadConfig();
 		const app = express()
 		const server = http.createServer(app)
         const cli = config.cli
@@ -82,14 +93,14 @@ module.exports = config => {
 
         // Basic auth, if configured
         app.use((req, res, next) => {
-            if (!cliServerConfig.username || !cliServerConfig.password) {
+            if (!username || !password) {
                 return next()
             }
             
             const b64auth = (req.headers.authorization || '').split(' ')[1] || ''
-            const [username, password] = Buffer.from(b64auth, 'base64').toString().split(':')
+            const [authName, authPass] = Buffer.from(b64auth, 'base64').toString().split(':')
 
-            if (cliServerConfig.username === username && cliServerConfig.password === password) {
+            if (username === authName && password === authPass) {
                 return next()
             }
 
@@ -98,8 +109,8 @@ module.exports = config => {
         })
 
         // Start the server
-		server.listen(cliServerConfig.port || 21028, cliServerConfig.host || 'localhost');
+		server.listen(port, host);
 
-        console.log('Started REST CLI server on ' + (cliServerConfig.host || 'localhost') + ':' + (cliServerConfig.port || 21028));
+        console.log(`Started REST CLI server on ${host}:${port}`);
 	}
 }
