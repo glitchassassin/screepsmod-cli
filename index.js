@@ -28,12 +28,15 @@ function loadConfig() {
  * @param {import('typed-screeps-server').ServerConfig} config
  */
 module.exports = config => {
-    const package = require("./package.json");
-    config.backend.features = config.backend.features || [];
-    config.backend.features.push({
-      name: package.name,
-      version: package.version,
-    });
+    if (config.backend) {
+        const pkg = require("./package.json");
+        config.backend.features ??= [];
+        config.backend.features.push({
+            name: pkg.name,
+            // @ts-expect-error typed as number, but clearly accepts a string as well
+            version: pkg.version,
+        });
+    }
 
 	if (config.cli) {
         const cliServerConfig = loadConfig();
