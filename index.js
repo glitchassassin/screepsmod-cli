@@ -6,53 +6,71 @@ const util = require('util')
 const fs = require('fs')
 const YAML = require('yaml')
 
+/** @type {Config} */
+const DEFAULTS = {
+    host: "localhost",
+    port: 21028,
+};
+
 /**
  * Loads config from config.yml (or .yaml)
- * @returns {{
- *   host?: string,
- *   port?: number,
- *   username?: string,
- *   password?: string,
- * }}
+ * @returns {Config}
  */
 function loadConfig() {
+    /** @type {Config | undefined} */
+    let config;
     for (const filename of ['config.yml', 'config.yaml']) {
         try {
-            const cli = YAML.parse(fs.readFileSync(filename, 'utf8')).cli || {};
+            config = YAML.parse(fs.readFileSync(filename, 'utf8')).cli || {};
             console.log('Loaded CLI config from ' + filename);
-            return cli;
+            break;
         } catch (e) {
             // skip this file
             console.log(filename, e)
         }
     }
-    return {};
+    if (!config) {
+        return DEFAULTS;
+    }
+    return Object.assign({}, DEFAULTS, config);
 }
 
+/**
+ * @param {import('typed-screeps-server').ServerConfig} config
+ */
 module.exports = config => {
-    const package = require("./package.json");
-    config.backend.features = config.backend.features || [];
-    config.backend.features.push({
-      name: package.name,
-      version: package.version,
-    });
+    if (config.backend) {
+        const pkg = require("./package.json");
+        config.backend.features ??= [];
+        config.backend.features.push({
+            name: pkg.name,
+            // @ts-expect-error typed as number, but clearly accepts a string as well
+            version: pkg.version,
+        });
+    }
 
 	if (config.cli) {
-        const cliServerConfig = loadConfig();
+        const { host, port, username, password } = loadConfig();
 		const app = express()
 		const server = http.createServer(app)
+        const cli = config.cli
 
         // Endpoints
 		app.get('/greeting', (req, res) => {
 			let build = ' '
 			try {
+                // @ts-expect-error not in our typed modules list
 				build = 'v'+require('screeps').version
 			}catch(err){}
-			let text = config.cli.greeting.replace('{build}', build)
+			let text = cli.greeting.replace('{build}', build)
 			res.write(text)
 			res.end()
 		})
 		app.post('/cli', bodyParser.text({ type: req => true }), async (req, res) => {
+            /**
+             * @param {string} data
+             * @param {boolean} [isResult]
+             */
 			const cb = (data, isResult) => {
 				res.write(data + "\n")
 				if (isResult) {
@@ -60,7 +78,7 @@ module.exports = config => {
 				}
 			}
 			const command = req.body
-			const ctx = vm.createContext(config.cli.createSandbox(cb))
+			const ctx = vm.createContext(cli.createSandbox(cb))
 			try {
 				const result = await vm.runInContext(command, ctx)
 				if (typeof result != 'string') {
@@ -68,21 +86,21 @@ module.exports = config => {
 				} else {
 					cb(''+result, true)
 				}
-			} catch(err) {
-				cb('Error: '+(err.stack || err), true)
+			} catch (err) {
+                cb('Error: ' + (err instanceof Error ? err.stack : err), true)
 			}
 		})
 
         // Basic auth, if configured
         app.use((req, res, next) => {
-            if (!cliServerConfig.username || !cliServerConfig.password) {
+            if (!username || !password) {
                 return next()
             }
             
             const b64auth = (req.headers.authorization || '').split(' ')[1] || ''
-            const [username, password] = Buffer.from(b64auth, 'base64').toString().split(':')
+            const [authName, authPass] = Buffer.from(b64auth, 'base64').toString().split(':')
 
-            if (cliServerConfig.username === username && cliServerConfig.password === password) {
+            if (username === authName && password === authPass) {
                 return next()
             }
 
@@ -91,8 +109,8 @@ module.exports = config => {
         })
 
         // Start the server
-		server.listen(cliServerConfig.port || 21028, cliServerConfig.host || 'localhost');
+		server.listen(port, host);
 
-        console.log('Started REST CLI server on ' + (cliServerConfig.host || 'localhost') + ':' + (cliServerConfig.port || 21028));
+        console.log(`Started REST CLI server on ${host}:${port}`);
 	}
 }
